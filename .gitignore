@@ -1,0 +1,6 @@
+/ROOT
+/models
+/data
+.vscode
+.history
+/__pycache__
