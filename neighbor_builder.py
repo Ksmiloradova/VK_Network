@@ -20,7 +20,7 @@ _PAPER_PAPER_B_PATH = 'ogb_mag_adjacencies/paper_paper_b.npz'
 FLAGS = flags.FLAGS
 flags.DEFINE_string('data_root', None, 'Data root directory')
 
-
+# Считывает "preprocessed/paper_feat_pca_129.npy"
 def _read_paper_pca_features():
   data_root = Path(FLAGS.data_root)
   path = data_root / data_utils.PCA_PAPER_FEATURES_FILENAME
@@ -52,7 +52,7 @@ def build_annoy_index(features):
   _ = annoy_index.build(n_trees)
   return annoy_index
 
-
+# Начало куска annoy
 def _get_annoy_index_path():
   return Path(FLAGS.data_root) / data_utils.PREPROCESSED_DIR / 'annoy_index.ann'
 
@@ -70,7 +70,7 @@ def read_annoy_index(features):
   annoy_index = annoy.AnnoyIndex(vector_size, 'euclidean')
   annoy_index.load(str(index_path))
   return annoy_index
-
+# Конец куска annoy
 
 def compute_neighbor_indices_and_distances(features):
   """Use the pre-built Annoy index to compute neighbor indices and distances."""
@@ -90,7 +90,7 @@ def compute_neighbor_indices_and_distances(features):
       logging.info('Finding neighbors %d / %d', i, num_vectors)
   return neighbor_indices, neighbor_distances
 
-
+# Сохранение готовых соседей
 def _write_neighbors(neighbor_indices, neighbor_distances):
   """Write neighbor indices and distances."""
   logging.info('Writing neighbors')
@@ -125,12 +125,13 @@ def _write_fused_nodes(fused_node_labels):
   with open(labels_path, 'wb') as fid:
     np.save(fid, fused_node_labels)
 
-
+# 
 def main(unused_argv):
   paper_pca_features = _read_paper_pca_features()
   # Find neighbors.
   annoy_index = build_annoy_index(paper_pca_features)
   save_annoy_index(annoy_index)
+  # Распределение статей по соседству
   neighbor_indices, neighbor_distances = compute_neighbor_indices_and_distances(
       paper_pca_features)
   del paper_pca_features

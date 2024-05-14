@@ -36,7 +36,8 @@ def _pca(feat):
   _, evals, evecs = np.linalg.svd(cov, full_matrices=True)
   return evals, evecs
 
-
+# Считывает numpy файл с эмбеддингами узлов 
+# (пример: raw/node_feat.npy processed/paper/node_feat.npy)
 def _read_raw_paper_features():
   """Load raw paper features."""
   path = Path(FLAGS.data_root) / data_utils.RAW_NODE_FEATURES_FILENAMEz
@@ -111,12 +112,14 @@ def _write_array(path, array):
   with open(path, 'wb') as fid:
     np.save(fid, array)
 
-
+# Обработка эмбеддингов узлов Методом Главных Компонент
+# Всё вычисляется из первоначальных узлов
 def main(unused_argv):
   data_root = Path(FLAGS.data_root)
 
   raw_paper_features = _read_raw_paper_features()   # читает "raw/node_feat.npy"
   principal_components = _get_principal_components(raw_paper_features)
+  # Схожий фрагмент
   paper_pca_features = _project_features_onto_principal_components(
       raw_paper_features, principal_components)
   del raw_paper_features
@@ -129,16 +132,19 @@ def main(unused_argv):
   merged_pca_path = data_root / data_utils.PCA_MERGED_FEATURES_FILENAME
   _write_array(paper_pca_path, paper_pca_features)
 
+  # Схожий фрагмент
   # Compute author and institution features from paper PCA features.
   index_arrays = _read_adjacency_indices()
   author_pca_features = _compute_author_pca_features(paper_pca_features,
                                                      index_arrays)
   _write_array(author_pca_path, author_pca_features)
 
+  # Схожий фрагмент
   institution_pca_features = _compute_institution_pca_features(
       author_pca_features, index_arrays)
   _write_array(institution_pca_path, institution_pca_features)
 
+  # Схожий фрагмент
   merged_pca_features = np.concatenate(
       [paper_pca_features, author_pca_features, institution_pca_features],
       axis=0)

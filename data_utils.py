@@ -20,13 +20,14 @@ Path = pathlib.Path
 NUM_PAPERS = 121751666
 NUM_AUTHORS = 122383112
 NUM_INSTITUTIONS = 25721
-EMBEDDING_SIZE = 768
+EMBEDDING_SIZE = 768 #(!)
 NUM_CLASSES = 153
 
 NUM_NODES = NUM_PAPERS + NUM_AUTHORS + NUM_INSTITUTIONS
 NUM_EDGES = 1_728_364_232
 assert NUM_NODES == 244_160_499
 
+# (?)
 NUM_K_FOLD_SPLITS = 10
 
 
@@ -50,6 +51,7 @@ RAW_NODE_FEATURES_FILENAME = RAW_DIR / "node_feat.npy"
 RAW_NODE_LABELS_FILENAME = RAW_DIR / "node_label.npy"
 RAW_NODE_YEAR_FILENAME = RAW_DIR / "node_year.npy"
 
+# (!)
 TRAIN_INDEX_FILENAME = RAW_DIR / "train_idx.npy"
 VALID_INDEX_FILENAME = RAW_DIR / "train_idx.npy"
 TEST_INDEX_FILENAME = RAW_DIR / "train_idx.npy"
@@ -126,8 +128,8 @@ def get_arrays(data_root="/data/",
   array_dict["paper_year"] = load_npy(data_root / RAW_NODE_YEAR_FILENAME)
 
   if k_fold_split_id is None:
-    train_indices = load_npy(data_root / TRAIN_INDEX_FILENAME)
-    valid_indices = load_npy(data_root / VALID_INDEX_FILENAME)
+    train_indices = load_npy(data_root / TRAIN_INDEX_FILENAME) #"train_idx.npy"
+    valid_indices = load_npy(data_root / VALID_INDEX_FILENAME) #"train_idx.npy"
   else:
     train_indices, valid_indices = get_train_and_valid_idx_for_split(
         k_fold_split_id, num_splits=NUM_K_FOLD_SPLITS,
@@ -135,12 +137,12 @@ def get_arrays(data_root="/data/",
 
   array_dict["train_indices"] = train_indices
   array_dict["valid_indices"] = valid_indices
-  array_dict["test_indices"] = load_npy(data_root / TEST_INDEX_FILENAME)
+  array_dict["test_indices"] = load_npy(data_root / TEST_INDEX_FILENAME) #"train_idx.npy"
 
   if use_fused_node_labels:
-    array_dict["paper_label"] = load_npy(data_root / FUSED_NODE_LABELS_FILENAME)
+    array_dict["paper_label"] = load_npy(data_root / FUSED_NODE_LABELS_FILENAME) #"fused_node_labels.npy"
   else:
-    array_dict["paper_label"] = load_npy(data_root / RAW_NODE_LABELS_FILENAME)
+    array_dict["paper_label"] = load_npy(data_root / RAW_NODE_LABELS_FILENAME) #"node_label.npy"
 
   if return_adjacencies:
     logging.info("Starting to get adjacencies.")
@@ -156,16 +158,17 @@ def get_arrays(data_root="/data/",
           data_root / EDGES_PAPER_PAPER_B_T, debug=use_dummy_adjacencies)
     array_dict.update(
         dict(
+            # Всевозможные связи между автором и институтами,статьями
             author_institution_index=load_csr(
-                data_root / EDGES_AUTHOR_INSTITUTION,
+                data_root / EDGES_AUTHOR_INSTITUTION, #"paper_paper_b.npz"
                 debug=use_dummy_adjacencies),
             institution_author_index=load_csr(
-                data_root / EDGES_INSTITUTION_AUTHOR,
+                data_root / EDGES_INSTITUTION_AUTHOR, #"institution_author.npz"
                 debug=use_dummy_adjacencies),
             author_paper_index=load_csr(
-                data_root / EDGES_AUTHOR_PAPER, debug=use_dummy_adjacencies),
+                data_root / EDGES_AUTHOR_PAPER, debug=use_dummy_adjacencies), #"author_paper.npz"
             paper_author_index=load_csr(
-                data_root / EDGES_PAPER_AUTHOR, debug=use_dummy_adjacencies),
+                data_root / EDGES_PAPER_AUTHOR, debug=use_dummy_adjacencies), #"paper_author.npz"
             paper_paper_index=paper_paper_index,
             paper_paper_index_t=paper_paper_index_t,
         ))
@@ -184,6 +187,7 @@ def get_arrays(data_root="/data/",
   if return_adjacencies and not use_dummy_adjacencies:
     array_dict = _fix_adjacency_shapes(array_dict)
 
+    # Тесты на сохранение количества каждой сущности
     assert array_dict["paper_author_index"].shape == (NUM_PAPERS, NUM_AUTHORS)
     assert array_dict["author_paper_index"].shape == (NUM_AUTHORS, NUM_PAPERS)
     assert array_dict["paper_paper_index"].shape == (NUM_PAPERS, NUM_PAPERS)
@@ -369,7 +373,7 @@ def generate_fused_paper_adjacency_matrix(neighbor_indices, neighbor_distances,
       (np.ones_like(new_rows, dtype=bool), (new_rows, new_cols)),
       shape=paper_paper_coo_shape).tocsr()
 
-
+# данные -> train, valid k раз
 def generate_k_fold_splits(
     train_idx, valid_idx, output_path, num_splits=NUM_K_FOLD_SPLITS):
   """Generates splits adding fractions of the validation split to training."""
@@ -403,7 +407,7 @@ def get_train_and_valid_idx_for_split(
   new_valid_idx = load_npy(f"{root_path}/valid_idx_{split_id}_{num_splits}.npy")
   return new_train_idx, new_valid_idx
 
-
+# (?)
 def generate_fused_node_labels(neighbor_indices, neighbor_distances,
                                node_labels, train_indices, valid_indices,
                                test_indices):

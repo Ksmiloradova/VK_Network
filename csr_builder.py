@@ -57,7 +57,7 @@ def _build_coo(edges_data, use_boolean=False):
         (edges_data[1, :], (edges_data[0, :], edges_data[1, :])))
   return mat_coo
 
-# Выозвращает путь для сохранения м-цы в npz
+# Возвращает путь для сохранения м-цы в npz
 def _get_output_paths(directory, content_names, use_boolean):
   boolean_str = '_b' if use_boolean else ''
   transpose_str = '_t' if len(set(content_names)) == 1 else ''
