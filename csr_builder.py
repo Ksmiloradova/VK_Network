@@ -18,18 +18,10 @@ FLAGS = flags.FLAGS
 
 # Имена преобразуемых матриц и сущности.
 _DATA_FILES_AND_PARAMETERS = {
-    'author_affiliated_with_institution_edges.npy': {
-        'content_names': ('author', 'institution'),
+    'group_affiliated_with_user_edges.npy': {
+        'content_names': ('group', 'user'),
         'use_boolean': False
-    },
-    'author_writes_paper_edges.npy': {
-        'content_names': ('author', 'paper'),
-        'use_boolean': False
-    },
-    'paper_cites_paper_edges.npy': {
-        'content_names': ('paper', 'paper'),
-        'use_boolean': True
-    },
+    }
 }
 
 flags.DEFINE_string('data_root', None, 'Data root directory')

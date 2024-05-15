@@ -33,7 +33,7 @@ if [[ -z "${TASK_ROOT}" ]]; then
   exit 1
 fi
 
-DATA_ROOT="${TASK_ROOT}"/vk_data
+DATA_ROOT="${TASK_ROOT}"/data
 # 
 # Create raw directory to move all files to it.
 # mkdir "${INPUT_DIR}"/mag240m_kddcup2021/raw
@@ -50,5 +50,5 @@ DATA_ROOT="${TASK_ROOT}"/vk_data
   #  "${DATA_ROOT}"/raw/paper_cites_paper_edges.npy
 
 # Split and save the train/valid/test indices to the raw directory, with names
-"train_idx.npy", "valid_idx.npy", "test_idx.npy":
+# "train_idx.npy", "valid_idx.npy", "test_idx.npy":
 python3 "${SCRIPT_DIR}"/split_and_save_indices.py --data_root=${DATA_ROOT}
