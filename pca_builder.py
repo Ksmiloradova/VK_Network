@@ -40,7 +40,7 @@ def _pca(feat):
 # (пример: raw/node_feat.npy processed/paper/node_feat.npy)
 def _read_raw_paper_features():
   """Load raw paper features."""
-  path = Path(FLAGS.data_root) / data_utils.RAW_NODE_FEATURES_FILENAMEz
+  path = Path(FLAGS.data_root) / data_utils.RAW_NODE_FEATURES_FILENAME
   try:  # Use mmap if possible.
     features = np.load(path, mmap_mode='r')
   except FileNotFoundError:
@@ -132,6 +132,7 @@ def main(unused_argv):
   merged_pca_path = data_root / data_utils.PCA_MERGED_FEATURES_FILENAME
   _write_array(paper_pca_path, paper_pca_features)
 
+  # TODO: Сжать до получения инфы для пользователей сообществ
   # Схожий фрагмент
   # Compute author and institution features from paper PCA features.
   index_arrays = _read_adjacency_indices()
@@ -140,16 +141,10 @@ def main(unused_argv):
   _write_array(author_pca_path, author_pca_features)
 
   # Схожий фрагмент
-  institution_pca_features = _compute_institution_pca_features(
-      author_pca_features, index_arrays)
-  _write_array(institution_pca_path, institution_pca_features)
-
-  # Схожий фрагмент
   merged_pca_features = np.concatenate(
-      [paper_pca_features, author_pca_features, institution_pca_features],
+      [paper_pca_features, author_pca_features],
       axis=0)
   del author_pca_features
-  del institution_pca_features
   _write_array(merged_pca_path, merged_pca_features)
 
 
