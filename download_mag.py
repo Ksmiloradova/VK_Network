@@ -29,12 +29,12 @@ DATA_RELATIVE_PATHS = (
     data_utils.TEST_INDEX_FILENAME,
     data_utils.K_FOLD_SPLITS_DIR,
     data_utils.FUSED_NODE_LABELS_FILENAME,
-    data_utils.FUSED_PAPER_EDGES_FILENAME,
-    data_utils.FUSED_PAPER_EDGES_T_FILENAME,
-    data_utils.EDGES_AUTHOR_INSTITUTION,
-    data_utils.EDGES_INSTITUTION_AUTHOR,
-    data_utils.EDGES_AUTHOR_PAPER,
-    data_utils.EDGES_PAPER_AUTHOR,
+    data_utils.FUSED_USER_EDGES_FILENAME,
+    data_utils.FUSED_USER_EDGES_T_FILENAME,
+    data_utils.EDGES_GROUP_INSTITUTION,
+    data_utils.EDGES_INSTITUTION_GROUP,
+    data_utils.EDGES_GROUP_USER,
+    data_utils.EDGES_USER_GROUP,
     data_utils.PCA_MERGED_FEATURES_FILENAME,
     )
 
@@ -97,9 +97,9 @@ def main(unused_argv):
     # logging.info("Copying relative path: '%s'", relative_path)
     relative_path = Path('D:\\')
     logging.info("Copying relative path: '%s'", relative_path)
-    blobs = bucket.list_blobs(prefix='mag/data/preprocessed/merged_feat_from_paper_feat_pca_129.npy')
+    blobs = bucket.list_blobs(prefix='mag/data/preprocessed/merged_feat_from_user_feat_pca_129.npy')
     # logging.info("blobs: '%s'", len(list(bucket.list_blobs(prefix=relative_path)))) # 0!?
-    logging.info("blobs: '%s'", len(list(bucket.list_blobs(prefix='mag/data/preprocessed/merged_feat_from_paper_feat_pca_129.npy'))))
+    logging.info("blobs: '%s'", len(list(bucket.list_blobs(prefix='mag/data/preprocessed/merged_feat_from_user_feat_pca_129.npy'))))
     for blob in blobs:
       _write_blob_to_destination(blob, FLAGS.task_root)
 

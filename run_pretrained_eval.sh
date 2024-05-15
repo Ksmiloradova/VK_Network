@@ -41,7 +41,7 @@ read -p "Press enter to continue"
 # will be created.
 # On validation, the results will be "gathered" for 10 models. This is because
 # each model is trained on the train split + 90% of the validation split,
-# and only evaluated on the remaining 10%, such that each validation paper
+# and only evaluated on the remaining 10%, such that each validation user
 # is left out from training in exactly one of the 10 models.
 SPLIT="test"
 

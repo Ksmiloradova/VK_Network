@@ -63,7 +63,7 @@ def build_dataset_iterator(
         data_root, k_fold_split_id=k_fold_split_id,
         use_dummy_adjacencies=use_dummy_adjacencies)
 
-  node_labels = array_dict['paper_label'].reshape(-1)
+  node_labels = array_dict['user_label'].reshape(-1)
   train_indices = array_dict['train_indices'].astype(np.int32)
   is_train_index = np.zeros(node_labels.shape[0], dtype=np.int32)
   is_train_index[train_indices] = 1
@@ -76,16 +76,16 @@ def build_dataset_iterator(
     indices = tf.cast(graph.nodes['index'], tf.int32)
     first_index = indices[..., 0]
 
-    # Add an additional absolute index, but adding offsets to authors, and
+    # Add an additional absolute index, but adding offsets to groups, and
     # institution indices.
     absolute_index = graph.nodes['index']
-    is_author = graph.nodes['type'] == 1
+    is_group = graph.nodes['type'] == 1
     absolute_index = tf.where(
-        is_author, absolute_index + data_utils.NUM_PAPERS, absolute_index)
+        is_group, absolute_index + data_utils.NUM_USERS, absolute_index)
     is_institution = graph.nodes['type'] == 2
     absolute_index = tf.where(
         is_institution,
-        absolute_index + data_utils.NUM_PAPERS + data_utils.NUM_AUTHORS,
+        absolute_index + data_utils.NUM_USERS + data_utils.NUM_GROUPS,
         absolute_index)
 
     is_same_as_central_node = tf.math.equal(indices, first_index)
@@ -152,19 +152,19 @@ def build_dataset_iterator(
 
     ### Construct label as a feature for non-central nodes.
     # First do a lookup with node indices, with a np.minimum to ensure we do not
-    # index out of bounds due to num_authors being larger than num_papers.
+    # index out of bounds due to num_groups being larger than num_users.
     is_same_as_central_node = graph.nodes['is_same_as_central_node']
     capped_indices = np.minimum(node_indices, node_labels.shape[0] - 1)
     label_as_feature = node_labels[capped_indices]
     # Nodes which are not in train set should get `num_classes` label.
     # Nodes in test set or non-arXiv nodes have -1 or nan labels.
 
-    # Mask out invalid labels and non-papers.
+    # Mask out invalid labels and non-users.
     use_label_as_feature = np.logical_and(label_as_feature >= 0,
                                           graph.nodes['one_hot_type'][..., 0])
     if split == 'train' or not use_all_labels_when_not_training:
-      # Mask out validation papers and non-arxiv papers who
-      # got labels from fusing with arxiv papers.
+      # Mask out validation users and non-arxiv users who
+      # got labels from fusing with arxiv users.
       use_label_as_feature = np.logical_and(is_train_index[capped_indices],
                                             use_label_as_feature)
     label_as_feature = np.where(use_label_as_feature, label_as_feature,
@@ -172,7 +172,7 @@ def build_dataset_iterator(
     # Mask out central node label in case it appears again.
     label_as_feature = np.where(is_same_as_central_node, NUM_CLASSES,
                                 label_as_feature)
-    # Nodes which are not papers get `NUM_CLASSES+1` label.
+    # Nodes which are not users get `NUM_CLASSES+1` label.
     label_as_feature = np.where(graph.nodes['one_hot_type'][..., 0],
                                 label_as_feature, NUM_CLASSES+1)
 
@@ -254,9 +254,9 @@ def _get_one_hot_year_representation(
   ])
   year = np.squeeze(year, axis=-1)
   year_id = np.searchsorted(bucket_edges, year)
-  is_paper = one_hot_type[..., 0]
-  bucket_id_for_non_paper = len(bucket_edges) + 1
-  bucket_id = np.where(is_paper, year_id, bucket_id_for_non_paper)
+  is_user = one_hot_type[..., 0]
+  bucket_id_for_non_user = len(bucket_edges) + 1
+  bucket_id = np.where(is_user, year_id, bucket_id_for_non_user)
   one_hot_year = _np_one_hot(bucket_id, len(bucket_edges) + 2)
   return one_hot_year
 
@@ -268,8 +268,8 @@ def _add_one_hot_features_to_batch(batch: Batch) -> Batch:
       nodes['year'], nodes['one_hot_type'])
   del nodes['year']
 
-  # NUM_CLASSES plus one category for papers for which a class is not provided
-  # and another for nodes that are not papers.
+  # NUM_CLASSES plus one category for users for which a class is not provided
+  # and another for nodes that are not users.
   nodes['one_hot_label_as_feature'] = _np_one_hot(
       nodes['label_as_feature'], NUM_CLASSES + 2)
   del nodes['label_as_feature']

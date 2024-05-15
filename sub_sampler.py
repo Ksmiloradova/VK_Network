@@ -39,22 +39,22 @@ def get_neighbours(node_id: int,
                    neighbour_type: int,
                    nb_neighbours: int,
                    remove_duplicates: bool,
-                   author_institution_csr, institution_author_csr,
-                   author_paper_csr, paper_author_csr,
-                   paper_paper_csr, paper_paper_transpose_csr):
+                   group_institution_csr, institution_group_csr,
+                   group_user_csr, user_group_csr,
+                   user_user_csr, user_user_transpose_csr):
   """Fetch the edge indices from one node to corresponding neighbour type."""
   if node_type == 0 and neighbour_type == 0:
-    csr = paper_paper_transpose_csr  # Citing
+    csr = user_user_transpose_csr  # Citing
   elif node_type == 0 and neighbour_type == 1:
-    csr = paper_author_csr
+    csr = user_group_csr
   elif node_type == 0 and neighbour_type == 3:
-    csr = paper_paper_csr  # Cited
+    csr = user_user_csr  # Cited
   elif node_type == 1 and neighbour_type == 0:
-    csr = author_paper_csr
+    csr = group_user_csr
   elif node_type == 1 and neighbour_type == 2:
-    csr = author_institution_csr
+    csr = group_institution_csr
   elif node_type == 2 and neighbour_type == 1:
-    csr = institution_author_csr
+    csr = institution_group_csr
   else:
     raise ValueError('Non-existent edge type requested')
   return get_or_sample_row(node_id, nb_neighbours, csr, remove_duplicates)
@@ -62,13 +62,13 @@ def get_neighbours(node_id: int,
 
 def get_senders(neighbour_type: int,
                 sender_index,
-                paper_features):
+                user_features):
   """Get the sender features from given neighbours."""
   if neighbour_type == 0 or neighbour_type == 3:
-    sender_features = paper_features[sender_index]
+    sender_features = user_features[sender_index]
   elif neighbour_type == 1 or neighbour_type == 2:
     sender_features = np.zeros((sender_index.shape[0],
-                                paper_features.shape[1]))  # Consider averages
+                                user_features.shape[1]))  # Consider averages
   else:
     raise ValueError('Non-existent node type requested')
   return sender_features
@@ -81,32 +81,32 @@ def make_edge_type_feature(node_type: int, neighbour_type: int):
   return edge_feats
 
 
-def subsample_graph(paper_id: int,
-                    author_institution_csr,
-                    institution_author_csr,
-                    author_paper_csr,
-                    paper_author_csr,
-                    paper_paper_csr,
-                    paper_paper_transpose_csr,
+def subsample_graph(user_id: int,
+                    group_institution_csr,
+                    institution_group_csr,
+                    group_user_csr,
+                    user_group_csr,
+                    user_user_csr,
+                    user_user_transpose_csr,
                     max_nb_neighbours_per_type,
                     max_nodes=None,
                     max_edges=None,
-                    paper_years=None,
+                    user_years=None,
                     remove_future_nodes=False,
                     deduplicate_nodes=False) -> jraph.GraphsTuple:
-  """Subsample a graph around given paper ID."""
-  if paper_years is not None:
-    root_paper_year = paper_years[paper_id]
+  """Subsample a graph around given user ID."""
+  if user_years is not None:
+    root_user_year = user_years[user_id]
   else:
-    root_paper_year = None
+    root_user_year = None
   # Add the center node as "node-zero"
-  sub_nodes = [paper_id]
+  sub_nodes = [user_id]
   num_nodes_in_subgraph = 1
   num_edges_in_subgraph = 0
   reached_node_budget = False
   reached_edge_budget = False
   node_and_type_to_index_in_subgraph = dict()
-  node_and_type_to_index_in_subgraph[(paper_id, 0)] = 0
+  node_and_type_to_index_in_subgraph[(user_id, 0)] = 0
   # Store all (integer) depths as an additional feature
   depths = [0]
   types = [0]
@@ -117,8 +117,8 @@ def subsample_graph(paper_id: int,
   # Store all unprocessed neighbours
   # Each neighbour is stored as a 4-tuple (node_index in original graph,
   # node_index in subsampled graph, type, number of hops away from source).
-  # TYPES: 0: paper, 1: author, 2: institution, 3: paper (for bidirectional)
-  neighbour_deque = collections.deque([(paper_id, 0, 0, 0)])
+  # TYPES: 0: user, 1: group, 2: institution, 3: user (for bidirectional)
+  neighbour_deque = collections.deque([(user_id, 0, 0, 0)])
 
   max_depth = len(max_nb_neighbours_per_type)
 
@@ -139,20 +139,20 @@ def subsample_graph(paper_id: int,
             neighbour_type,
             nb_neighbours,
             deduplicate_nodes,
-            author_institution_csr,
-            institution_author_csr,
-            author_paper_csr,
-            paper_author_csr,
-            paper_paper_csr,
-            paper_paper_transpose_csr,
+            group_institution_csr,
+            institution_group_csr,
+            group_user_csr,
+            user_group_csr,
+            user_user_csr,
+            user_user_transpose_csr,
         )
 
         if sampled_neighbors is not None:
-          if remove_future_nodes and root_paper_year is not None:
+          if remove_future_nodes and root_user_year is not None:
             if neighbour_type in [0, 3]:
               sampled_neighbors = [
                   x for x in sampled_neighbors
-                  if paper_years[x] <= root_paper_year
+                  if user_years[x] <= root_user_year
               ]
               if not sampled_neighbors:
                 continue

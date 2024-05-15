@@ -38,16 +38,16 @@ DATA_ROOT="${TASK_ROOT}"/data
 # Create raw directory to move all files to it.
 # mkdir "${INPUT_DIR}"/mag240m_kddcup2021/raw
 # 
-# mv "${INPUT_DIR}"/mag240m_kddcup2021/processed/paper/node_feat.npy \
-  #  "${INPUT_DIR}"/mag240m_kddcup2021/processed/paper/node_label.npy \
-  #  "${INPUT_DIR}"/mag240m_kddcup2021/processed/paper/node_year.npy \
+# mv "${INPUT_DIR}"/mag240m_kddcup2021/processed/user/node_feat.npy \
+  #  "${INPUT_DIR}"/mag240m_kddcup2021/processed/user/node_label.npy \
+  #  "${INPUT_DIR}"/mag240m_kddcup2021/processed/user/node_year.npy \
   #  "${DATA_ROOT}"/raw
-# mv "${INPUT_DIR}"/mag240m_kddcup2021/processed/author___affiliated_with___institution/edge_index.npy \
-  #  "${DATA_ROOT}"/raw/author_affiliated_with_institution_edges.npy
-# mv "${ROOT}"/mag240m_kddcup2021/processed/author___writes___paper/edge_index.npy \
-  #  "${DATA_ROOT}"/raw/author_writes_paper_edges.npy
-# mv "${ROOT}"/mag240m_kddcup2021/processed/paper___cites___paper/edge_index.npy \
-  #  "${DATA_ROOT}"/raw/paper_cites_paper_edges.npy
+# mv "${INPUT_DIR}"/mag240m_kddcup2021/processed/group___affiliated_with___institution/edge_index.npy \
+  #  "${DATA_ROOT}"/raw/group_affiliated_with_institution_edges.npy
+# mv "${ROOT}"/mag240m_kddcup2021/processed/group___writes___user/edge_index.npy \
+  #  "${DATA_ROOT}"/raw/group_writes_user_edges.npy
+# mv "${ROOT}"/mag240m_kddcup2021/processed/user___cites___user/edge_index.npy \
+  #  "${DATA_ROOT}"/raw/user_cites_user_edges.npy
 
 # Split and save the train/valid/test indices to the raw directory, with names
 # "train_idx.npy", "valid_idx.npy", "test_idx.npy":

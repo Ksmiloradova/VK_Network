@@ -1,7 +1,7 @@
-"""Apply PCA to the papers' BERT features.
+"""Apply PCA to the users' BERT features.
 
-Compute papers' PCA features.
-Recompute author and institution features from the paper PCA features.
+Compute users' PCA features.
+Recompute group and institution features from the user PCA features.
 """
 
 import pathlib
@@ -17,7 +17,7 @@ import data_utils
 
 Path = pathlib.Path
 
-_NUMBER_OF_PAPERS_TO_ESTIMATE_PCA_ON = 1000000  # None indicates all.
+_NUMBER_OF_USERS_TO_ESTIMATE_PCA_ON = 1000000  # None indicates all.
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('data_root', None, 'Data root directory')
@@ -37,9 +37,9 @@ def _pca(feat):
   return evals, evecs
 
 # Считывает numpy файл с эмбеддингами узлов 
-# (пример: raw/node_feat.npy processed/paper/node_feat.npy)
-def _read_raw_paper_features():
-  """Load raw paper features."""
+# (пример: raw/node_feat.npy processed/user/node_feat.npy)
+def _read_raw_user_features():
+  """Load raw user features."""
   path = Path(FLAGS.data_root) / data_utils.RAW_NODE_FEATURES_FILENAME
   try:  # Use mmap if possible.
     features = np.load(path, mmap_mode='r')
@@ -56,7 +56,7 @@ def _get_principal_components(features,
                               dtype='f4'):
   """Estimate PCA features."""
   sample = _sample_vectors(
-      features[:_NUMBER_OF_PAPERS_TO_ESTIMATE_PCA_ON], num_samples, seed=seed)
+      features[:_NUMBER_OF_USERS_TO_ESTIMATE_PCA_ON], num_samples, seed=seed)
   # Compute PCA basis.
   _, evecs = _pca(sample)
   return evecs[:num_principal_components].T.astype(dtype)
@@ -97,14 +97,14 @@ def _read_adjacency_indices():
   )
 
 
-def _compute_author_pca_features(paper_pca_features, index_arrays):
-  return data_utils.paper_features_to_author_features(
-      index_arrays['author_paper_index'], paper_pca_features)
+def _compute_group_pca_features(user_pca_features, index_arrays):
+  return data_utils.user_features_to_group_features(
+      index_arrays['group_user_index'], user_pca_features)
 
 
-def _compute_institution_pca_features(author_pca_features, index_arrays):
-  return data_utils.author_features_to_institution_features(
-      index_arrays['institution_author_index'], author_pca_features)
+def _compute_institution_pca_features(group_pca_features, index_arrays):
+  return data_utils.group_features_to_institution_features(
+      index_arrays['institution_group_index'], group_pca_features)
 
 
 def _write_array(path, array):
@@ -117,34 +117,34 @@ def _write_array(path, array):
 def main(unused_argv):
   data_root = Path(FLAGS.data_root)
 
-  raw_paper_features = _read_raw_paper_features()   # читает "raw/node_feat.npy"
-  principal_components = _get_principal_components(raw_paper_features)
+  raw_user_features = _read_raw_user_features()   # читает "raw/node_feat.npy"
+  principal_components = _get_principal_components(raw_user_features)
   # Схожий фрагмент
-  paper_pca_features = _project_features_onto_principal_components(
-      raw_paper_features, principal_components)
-  del raw_paper_features
+  user_pca_features = _project_features_onto_principal_components(
+      raw_user_features, principal_components)
+  del raw_user_features
   del principal_components
 
-  paper_pca_path = data_root / data_utils.PCA_PAPER_FEATURES_FILENAME
-  author_pca_path = data_root / data_utils.PCA_AUTHOR_FEATURES_FILENAME
+  user_pca_path = data_root / data_utils.PCA_USER_FEATURES_FILENAME
+  group_pca_path = data_root / data_utils.PCA_GROUP_FEATURES_FILENAME
   institution_pca_path = (
       data_root / data_utils.PCA_INSTITUTION_FEATURES_FILENAME)
   merged_pca_path = data_root / data_utils.PCA_MERGED_FEATURES_FILENAME
-  _write_array(paper_pca_path, paper_pca_features)
+  _write_array(user_pca_path, user_pca_features)
 
   # TODO: Сжать до получения инфы для пользователей сообществ
   # Схожий фрагмент
-  # Compute author and institution features from paper PCA features.
+  # Compute group and institution features from user PCA features.
   index_arrays = _read_adjacency_indices()
-  author_pca_features = _compute_author_pca_features(paper_pca_features,
+  group_pca_features = _compute_group_pca_features(user_pca_features,
                                                      index_arrays)
-  _write_array(author_pca_path, author_pca_features)
+  _write_array(group_pca_path, group_pca_features)
 
   # Схожий фрагмент
   merged_pca_features = np.concatenate(
-      [paper_pca_features, author_pca_features],
+      [user_pca_features, group_pca_features],
       axis=0)
-  del author_pca_features
+  del group_pca_features
   _write_array(merged_pca_path, merged_pca_features)
 
 

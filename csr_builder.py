@@ -18,7 +18,7 @@ FLAGS = flags.FLAGS
 
 # Имена преобразуемых матриц и сущности.
 _DATA_FILES_AND_PARAMETERS = {
-    'group_affiliated_with_user_edges.npy': {
+    'group_contains_user_edges.npy': {
         'content_names': ('group', 'user'),
         'use_boolean': False
     }
@@ -32,7 +32,9 @@ flags.mark_flags_as_required(['data_root'])
 # Считывает файл.
 def _read_edge_data(path):
   try:
-    return np.load(path, mmap_mode='r')
+    ret = np.load(path, mmap_mode='r')
+    print('_read_edge_data ret shape', ret.shape)
+    return ret
   except FileNotFoundError:
     # If the file path can't be found by np.load, use the file handle w/o mmap.
     with path.open('rb') as fid:
@@ -40,6 +42,9 @@ def _read_edge_data(path):
 
 # То Самое пострение матрицы (!)
 def _build_coo(edges_data, use_boolean=False):
+  print("func_build_coo")
+  print('edges_data.shape', edges_data.shape)
+  print('use_boolean', use_boolean)
   if use_boolean:
     mat_coo = scipy.sparse.coo_matrix(
         (np.ones_like(edges_data[1, :],
@@ -51,6 +56,9 @@ def _build_coo(edges_data, use_boolean=False):
 
 # Возвращает путь для сохранения м-цы в npz
 def _get_output_paths(directory, content_names, use_boolean):
+  print('func _get_output_paths')
+  print('content_names', content_names)
+  print('use_boolean', use_boolean)
   boolean_str = '_b' if use_boolean else ''
   transpose_str = '_t' if len(set(content_names)) == 1 else ''
   output_prefix = '_'.join(content_names)

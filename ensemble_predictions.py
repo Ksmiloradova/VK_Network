@@ -154,7 +154,7 @@ def generate_ensembled_predictions(
   assert np.all(np.sort(idx_found) == expected_idx)
 
   if split == 'valid':
-    true_labels = array_dict['paper_label'][expected_idx.astype(np.int32)]
+    true_labels = array_dict['user_label'][expected_idx.astype(np.int32)]
   else:
     # Don't know the test labels.
     true_labels = np.full(expected_idx.shape, np.nan)

@@ -1,4 +1,4 @@
-"""Find neighborhoods around paper feature embeddings."""
+"""Find neighborhoods around user feature embeddings."""
 
 import pathlib
 
@@ -15,15 +15,15 @@ import data_utils
 Path = pathlib.Path
 
 
-_PAPER_PAPER_B_PATH = 'ogb_mag_adjacencies/paper_paper_b.npz'
+_USER_USER_B_PATH = 'ogb_mag_adjacencies/user_user_b.npz'
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('data_root', None, 'Data root directory')
 
-# Считывает "preprocessed/paper_feat_pca_129.npy"
-def _read_paper_pca_features():
+# Считывает "preprocessed/user_feat_pca_129.npy"
+def _read_user_pca_features():
   data_root = Path(FLAGS.data_root)
-  path = data_root / data_utils.PCA_PAPER_FEATURES_FILENAME
+  path = data_root / data_utils.PCA_USER_FEATURES_FILENAME
   with open(path, 'rb') as fid:
     return np.load(fid)
 
@@ -105,17 +105,17 @@ def _write_neighbors(neighbor_indices, neighbor_distances):
     np.save(fid, neighbor_distances)
 
 
-def _write_fused_edges(fused_paper_adjacency_matrix):
+def _write_fused_edges(fused_user_adjacency_matrix):
   """Write fused edges."""
   data_root = Path(FLAGS.data_root)
-  edges_path = data_root / data_utils.FUSED_PAPER_EDGES_FILENAME
-  edges_t_path = data_root / data_utils.FUSED_PAPER_EDGES_T_FILENAME
+  edges_path = data_root / data_utils.FUSED_USER_EDGES_FILENAME
+  edges_t_path = data_root / data_utils.FUSED_USER_EDGES_T_FILENAME
   edges_path.parent.mkdir(parents=True, exist_ok=True)
   edges_t_path.parent.mkdir(parents=True, exist_ok=True)
   with open(edges_path, 'wb') as fid:
-    sp.save_npz(fid, fused_paper_adjacency_matrix)
+    sp.save_npz(fid, fused_user_adjacency_matrix)
   with open(edges_t_path, 'wb') as fid:
-    sp.save_npz(fid, fused_paper_adjacency_matrix.T)
+    sp.save_npz(fid, fused_user_adjacency_matrix.T)
 
 
 def _write_fused_nodes(fused_node_labels):
@@ -127,32 +127,32 @@ def _write_fused_nodes(fused_node_labels):
 
 # 
 def main(unused_argv):
-  paper_pca_features = _read_paper_pca_features()
+  user_pca_features = _read_user_pca_features()
   # Find neighbors.
-  annoy_index = build_annoy_index(paper_pca_features)
+  annoy_index = build_annoy_index(user_pca_features)
   save_annoy_index(annoy_index)
   # Распределение статей по соседству
   neighbor_indices, neighbor_distances = compute_neighbor_indices_and_distances(
-      paper_pca_features)
-  del paper_pca_features
+      user_pca_features)
+  del user_pca_features
   _write_neighbors(neighbor_indices, neighbor_distances)
 
   data = _read_adjacency_indices()
-  paper_paper_csr = data['paper_paper_index']
-  paper_label = data['paper_label']
+  user_user_csr = data['user_user_index']
+  user_label = data['user_label']
   train_indices = data['train_indices']
   valid_indices = data['valid_indices']
   test_indices = data['test_indices']
   del data
 
-  fused_paper_adjacency_matrix = data_utils.generate_fused_paper_adjacency_matrix(
-      neighbor_indices, neighbor_distances, paper_paper_csr)
-  _write_fused_edges(fused_paper_adjacency_matrix)
-  del fused_paper_adjacency_matrix
-  del paper_paper_csr
+  fused_user_adjacency_matrix = data_utils.generate_fused_user_adjacency_matrix(
+      neighbor_indices, neighbor_distances, user_user_csr)
+  _write_fused_edges(fused_user_adjacency_matrix)
+  del fused_user_adjacency_matrix
+  del user_user_csr
 
   fused_node_labels = data_utils.generate_fused_node_labels(
-      neighbor_indices, neighbor_distances, paper_label, train_indices,
+      neighbor_indices, neighbor_distances, user_label, train_indices,
       valid_indices, test_indices)
   _write_fused_nodes(fused_node_labels)
 

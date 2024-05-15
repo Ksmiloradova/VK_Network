@@ -17,31 +17,31 @@ import sub_sampler
 
 Path = pathlib.Path
 
-# NUM_PAPERS = 18_630_018
-NUM_AUTHORS = 18_630_018
-NUM_INSTITUTIONS = 537_442_563
+NUM_USERS = 537_442_563
+NUM_GROUPS = 18_630_018
+# NUM_INSTITUTIONS = 
 EMBEDDING_SIZE = 768 #(!)
 NUM_CLASSES = 153
 
-NUM_NODES = NUM_AUTHORS + NUM_INSTITUTIONS
-NUM_EDGES = 1_728_364_232
+NUM_NODES = NUM_USERS + NUM_GROUPS
+# NUM_EDGES = 1_728_364_232
 assert NUM_NODES == 556_072_581
 
 # (?)
 NUM_K_FOLD_SPLITS = 10
 
-
+# (!) twist maybe
 OFFSETS = {
-    # "paper": 0,
-    "author": 0,
-    "institution": NUM_AUTHORS,
+    "user": 0,
+    "group": NUM_USERS,
+    # "institution": NUM_GROUPS,
 }
 
 
 SIZES = {
-    # "paper": NUM_PAPERS,
-    "author": NUM_AUTHORS,
-    "institution": NUM_INSTITUTIONS
+    "user": NUM_USERS,
+    "group": NUM_GROUPS,
+    # "institution": NUM_INSTITUTIONS
 }
 
 RAW_DIR = Path("raw")
@@ -56,27 +56,27 @@ TRAIN_INDEX_FILENAME = RAW_DIR / "train_idx.npy"
 VALID_INDEX_FILENAME = RAW_DIR / "train_idx.npy"
 TEST_INDEX_FILENAME = RAW_DIR / "train_idx.npy"
 
-EDGES_PAPER_PAPER_B = PREPROCESSED_DIR / "paper_paper_b.npz"
-EDGES_PAPER_PAPER_B_T = PREPROCESSED_DIR / "paper_paper_b_t.npz"
-EDGES_AUTHOR_INSTITUTION = PREPROCESSED_DIR / "group_user.npz"
-EDGES_INSTITUTION_AUTHOR = PREPROCESSED_DIR / "user_group.npz"
-EDGES_AUTHOR_PAPER = PREPROCESSED_DIR / "author_paper.npz"
-EDGES_PAPER_AUTHOR = PREPROCESSED_DIR / "paper_author.npz"
+EDGES_USER_USER_B = PREPROCESSED_DIR / "user_user_b.npz"
+EDGES_USER_USER_B_T = PREPROCESSED_DIR / "user_user_b_t.npz"
+EDGES_GROUP_INSTITUTION = PREPROCESSED_DIR / "group_user.npz"
+EDGES_INSTITUTION_GROUP = PREPROCESSED_DIR / "user_group.npz"
+EDGES_GROUP_USER = PREPROCESSED_DIR / "group_user.npz"
+EDGES_USER_GROUP = PREPROCESSED_DIR / "user_group.npz"
 
-PCA_PAPER_FEATURES_FILENAME = PREPROCESSED_DIR / "paper_feat_pca_129.npy"
-PCA_AUTHOR_FEATURES_FILENAME = (
-    PREPROCESSED_DIR / "author_feat_from_paper_feat_pca_129.npy")
+PCA_USER_FEATURES_FILENAME = PREPROCESSED_DIR / "user_feat_pca_129.npy"
+PCA_GROUP_FEATURES_FILENAME = (
+    PREPROCESSED_DIR / "group_feat_from_user_feat_pca_129.npy")
 PCA_INSTITUTION_FEATURES_FILENAME = (
-    PREPROCESSED_DIR / "institution_feat_from_paper_feat_pca_129.npy")
+    PREPROCESSED_DIR / "institution_feat_from_user_feat_pca_129.npy")
 PCA_MERGED_FEATURES_FILENAME = (
-    PREPROCESSED_DIR / "merged_feat_from_paper_feat_pca_129.npy")
+    PREPROCESSED_DIR / "merged_feat_from_user_feat_pca_129.npy")
 
 NEIGHBOR_INDICES_FILENAME = PREPROCESSED_DIR / "neighbor_indices.npy"
 NEIGHBOR_DISTANCES_FILENAME = PREPROCESSED_DIR / "neighbor_distances.npy"
 
 FUSED_NODE_LABELS_FILENAME = PREPROCESSED_DIR / "fused_node_labels.npy"
-FUSED_PAPER_EDGES_FILENAME = PREPROCESSED_DIR / "fused_paper_edges.npz"
-FUSED_PAPER_EDGES_T_FILENAME = PREPROCESSED_DIR / "fused_paper_edges_t.npz"
+FUSED_USER_EDGES_FILENAME = PREPROCESSED_DIR / "fused_user_edges.npz"
+FUSED_USER_EDGES_T_FILENAME = PREPROCESSED_DIR / "fused_user_edges_t.npz"
 
 K_FOLD_SPLITS_DIR = Path("k_fold_splits")
 
@@ -127,7 +127,7 @@ def get_arrays(data_root="/data/",
   data_root = Path(data_root)
 
   array_dict = {}
-  array_dict["paper_year"] = load_npy(data_root / RAW_NODE_YEAR_FILENAME)
+  array_dict["user_year"] = load_npy(data_root / RAW_NODE_YEAR_FILENAME)
 
   if k_fold_split_id is None:
     train_indices = load_npy(data_root / TRAIN_INDEX_FILENAME) #"train_idx.npy"
@@ -142,25 +142,25 @@ def get_arrays(data_root="/data/",
   array_dict["test_indices"] = load_npy(data_root / TEST_INDEX_FILENAME) #"train_idx.npy"
 
   # if use_fused_node_labels:
-  #   array_dict["paper_label"] = load_npy(data_root / FUSED_NODE_LABELS_FILENAME) #"fused_node_labels.npy"
+  #   array_dict["user_label"] = load_npy(data_root / FUSED_NODE_LABELS_FILENAME) #"fused_node_labels.npy"
   # else:
-  #   array_dict["paper_label"] = load_npy(data_root / RAW_NODE_LABELS_FILENAME) #"node_label.npy"
+  #   array_dict["user_label"] = load_npy(data_root / RAW_NODE_LABELS_FILENAME) #"node_label.npy"
 
   if return_adjacencies:
     logging.info("Starting to get adjacencies.")
     if use_fused_node_adjacencies:
-      paper_paper_index = load_csr(
-          data_root / FUSED_PAPER_EDGES_FILENAME, debug=use_dummy_adjacencies)
-      paper_paper_index_t = load_csr(
-          data_root / FUSED_PAPER_EDGES_T_FILENAME, debug=use_dummy_adjacencies)
+      user_user_index = load_csr(
+          data_root / FUSED_USER_EDGES_FILENAME, debug=use_dummy_adjacencies)
+      user_user_index_t = load_csr(
+          data_root / FUSED_USER_EDGES_T_FILENAME, debug=use_dummy_adjacencies)
     array_dict.update(
         dict(
             # Всевозможные связи между автором и институтами,статьями
-            author_institution_index=load_csr(
-                data_root / EDGES_AUTHOR_INSTITUTION, #"paper_paper_b.npz"
+            group_institution_index=load_csr(
+                data_root / EDGES_GROUP_INSTITUTION, #"user_user_b.npz"
                 debug=use_dummy_adjacencies),
-            institution_author_index=load_csr(
-                data_root / EDGES_INSTITUTION_AUTHOR, #"institution_author.npz"
+            institution_group_index=load_csr(
+                data_root / EDGES_INSTITUTION_GROUP, #"institution_group.npz"
                 debug=use_dummy_adjacencies)
         ))
 
@@ -173,41 +173,41 @@ def get_arrays(data_root="/data/",
   logging.info("Finish getting files")
 
   # # pytype: disable=attribute-error
-  # assert array_dict["paper_year"].shape[0] == NUM_PAPERS
-  # assert array_dict["paper_label"].shape[0] == NUM_PAPERS
+  # assert array_dict["user_year"].shape[0] == NUM_USERS
+  # assert array_dict["user_label"].shape[0] == NUM_USERS
 
   if return_adjacencies and not use_dummy_adjacencies:
     array_dict = _fix_adjacency_shapes(array_dict)
 
     # Тесты на сохранение количества каждой сущности
-    # assert array_dict["paper_author_index"].shape == (NUM_PAPERS, NUM_AUTHORS)
-    # assert array_dict["author_paper_index"].shape == (NUM_AUTHORS, NUM_PAPERS)
-    # assert array_dict["paper_paper_index"].shape == (NUM_PAPERS, NUM_PAPERS)
-    # assert array_dict["paper_paper_index_t"].shape == (NUM_PAPERS, NUM_PAPERS)
-    print('array_dict["institution_author_index"].shape',array_dict["institution_author_index"].shape)
-    assert array_dict["institution_author_index"].shape == (
-        NUM_INSTITUTIONS, NUM_AUTHORS)
-    assert array_dict["author_institution_index"].shape == (
-        NUM_AUTHORS, NUM_INSTITUTIONS)
+    assert array_dict["user_group_index"].shape == (NUM_USERS, NUM_GROUPS)
+    assert array_dict["group_user_index"].shape == (NUM_GROUPS, NUM_USERS)
+    # assert array_dict["user_user_index"].shape == (NUM_USERS, NUM_USERS)
+    # assert array_dict["user_user_index_t"].shape == (NUM_USERS, NUM_USERS)
+    # print('array_dict["institution_group_index"].shape',array_dict["institution_group_index"].shape)
+    # assert array_dict["institution_group_index"].shape == (
+        # NUM_INSTITUTIONS, NUM_GROUPS)
+    # assert array_dict["group_institution_index"].shape == (
+    #     NUM_GROUPS, NUM_INSTITUTIONS)
 
   # pytype: enable=attribute-error
 
   return array_dict
 
 
-def add_nodes_year(graph, paper_year):
+def add_nodes_year(graph, user_year):
   nodes = graph.nodes.copy()
   indices = nodes["index"]
-  year = paper_year[np.minimum(indices, paper_year.shape[0] - 1)].copy()
+  year = user_year[np.minimum(indices, user_year.shape[0] - 1)].copy()
   year[nodes["type"] != 0] = 1900
   nodes["year"] = year
   return graph._replace(nodes=nodes)
 
 
-def add_nodes_label(graph, paper_label):
+def add_nodes_label(graph, user_label):
   nodes = graph.nodes.copy()
   indices = nodes["index"]
-  label = paper_label[np.minimum(indices, paper_label.shape[0] - 1)]
+  label = user_label[np.minimum(indices, user_label.shape[0] - 1)]
   label[nodes["type"] != 0] = 0
   nodes["label"] = label
   return graph._replace(nodes=nodes)
@@ -218,8 +218,8 @@ def add_nodes_embedding_from_array(graph, array):
   nodes = graph.nodes.copy()
   indices = nodes["index"]
   embedding_indices = indices.copy()
-  # embedding_indices[nodes["type"] == 1] += NUM_PAPERS
-  # embedding_indices[nodes["type"] == 2] += NUM_PAPERS + NUM_AUTHORS
+  # embedding_indices[nodes["type"] == 1] += NUM_USERS
+  # embedding_indices[nodes["type"] == 2] += NUM_USERS + NUM_GROUPS
 
   # Gather the embeddings for the indices.
   nodes["features"] = array[embedding_indices]
@@ -238,7 +238,7 @@ def get_graph_subsampling_dataset(
       num_unlabeled_data_to_add = int(ratio_unlabeled_data_to_labeled_data *
                                       labeled_indices.shape[0])
       unlabeled_indices = np.random.choice(
-          NUM_PAPERS, size=num_unlabeled_data_to_add, replace=False)
+          NUM_USERS, size=num_unlabeled_data_to_add, replace=False)
       root_node_indices = np.concatenate([labeled_indices, unlabeled_indices])
     else:
       root_node_indices = labeled_indices
@@ -249,19 +249,19 @@ def get_graph_subsampling_dataset(
     for index in root_node_indices:
       graph = sub_sampler.subsample_graph(
           index,
-          arrays["author_institution_index"],
-          arrays["institution_author_index"],
-          arrays["author_paper_index"],
-          arrays["paper_author_index"],
-          arrays["paper_paper_index"],
-          arrays["paper_paper_index_t"],
-          paper_years=arrays["paper_year"],
+          arrays["group_institution_index"],
+          arrays["institution_group_index"],
+          arrays["group_user_index"],
+          arrays["user_group_index"],
+          arrays["user_user_index"],
+          arrays["user_user_index_t"],
+          user_years=arrays["user_year"],
           max_nodes=max_nodes,
           max_edges=max_edges,
           **subsampler_kwargs)
 
-      graph = add_nodes_label(graph, arrays["paper_label"])
-      graph = add_nodes_year(graph, arrays["paper_year"])
+      graph = add_nodes_label(graph, arrays["user_label"])
+      graph = add_nodes_year(graph, arrays["user_year"])
       graph = tf_graphs.GraphsTuple(*graph)
       yield graph
 
@@ -272,47 +272,47 @@ def get_graph_subsampling_dataset(
       output_signature=utils_tf.specs_from_graphs_tuple(sample_graph))
 
 
-def paper_features_to_author_features(
-    author_paper_index, paper_features):
-  """Averages paper features to authors."""
-  # assert paper_features.shape[0] == NUM_PAPERS
-  assert author_paper_index.shape[0] == NUM_AUTHORS
-  author_features = np.zeros(
-      [NUM_AUTHORS, paper_features.shape[1]], dtype=paper_features.dtype)
-  for author_i in range(NUM_AUTHORS):
-    paper_indices = author_paper_index[author_i].indices
-    author_features[author_i] = paper_features[paper_indices].mean(
+def user_features_to_group_features(
+    group_user_index, user_features):
+  """Averages user features to groups."""
+  # assert user_features.shape[0] == NUM_USERS
+  assert group_user_index.shape[0] == NUM_GROUPS
+  group_features = np.zeros(
+      [NUM_GROUPS, user_features.shape[1]], dtype=user_features.dtype)
+  for group_i in range(NUM_GROUPS):
+    user_indices = group_user_index[group_i].indices
+    group_features[group_i] = user_features[user_indices].mean(
         axis=0, dtype=np.float32)
-    if author_i % 10000 == 0:
-      logging.info("%d/%d", author_i, NUM_AUTHORS)
-  return author_features
+    if group_i % 10000 == 0:
+      logging.info("%d/%d", group_i, NUM_GROUPS)
+  return group_features
 
 
-def author_features_to_institution_features(
-    institution_author_index, author_features):
-  """Averages author features to institutions."""
-  assert author_features.shape[0] == NUM_AUTHORS
-  assert institution_author_index.shape[0] == NUM_INSTITUTIONS
-  institution_features = np.zeros(
-      [NUM_INSTITUTIONS, author_features.shape[1]], dtype=author_features.dtype)
-  for institution_i in range(NUM_INSTITUTIONS):
-    author_indices = institution_author_index[institution_i].indices
-    institution_features[institution_i] = author_features[
-        author_indices].mean(axis=0, dtype=np.float32)
-    if institution_i % 10000 == 0:
-      logging.info("%d/%d", institution_i, NUM_INSTITUTIONS)
-  return institution_features
+def group_features_to_institution_features(
+    institution_group_index, group_features):
+  """Averages group features to institutions."""
+  assert group_features.shape[0] == NUM_GROUPS
+  # assert institution_group_index.shape[0] == NUM_INSTITUTIONS
+  # institution_features = np.zeros(
+  #     [NUM_INSTITUTIONS, group_features.shape[1]], dtype=group_features.dtype)
+  # for institution_i in range(NUM_INSTITUTIONS):
+  #   group_indices = institution_group_index[institution_i].indices
+  #   institution_features[institution_i] = group_features[
+  #       group_indices].mean(axis=0, dtype=np.float32)
+  #   if institution_i % 10000 == 0:
+  #     logging.info("%d/%d", institution_i, NUM_INSTITUTIONS)
+  # return institution_features
 
 
-def generate_fused_paper_adjacency_matrix(neighbor_indices, neighbor_distances,
-                                          paper_paper_csr):
+def generate_fused_user_adjacency_matrix(neighbor_indices, neighbor_distances,
+                                          user_user_csr):
   """Generates fused adjacency matrix for identical nodes."""
   # First construct set of identical node indices.
   # NOTE: Since we take only top K=26 identical pairs for each node, this is not
   # actually exhaustive. Also, if A and B are equal, and B and C are equal,
   # this method would not necessarily detect A and C being equal.
   # However, this should capture almost all cases.
-  logging.info("Generating fused paper adjacency matrix")
+  logging.info("Generating fused user adjacency matrix")
   eps = 0.0
   mask = ((neighbor_indices != np.mgrid[:neighbor_indices.shape[0], :1]) &
           (neighbor_distances <= eps))
@@ -320,51 +320,51 @@ def generate_fused_paper_adjacency_matrix(neighbor_indices, neighbor_distances,
   del mask
 
   # Have a csc version for fast column access.
-  paper_paper_csc = paper_paper_csr.tocsc()
+  user_user_csc = user_user_csr.tocsc()
 
   # Construct new matrix as coo, starting off with original rows/cols.
-  paper_paper_coo = paper_paper_csr.tocoo()
-  new_rows = [paper_paper_coo.row]
-  new_cols = [paper_paper_coo.col]
+  user_user_coo = user_user_csr.tocoo()
+  new_rows = [user_user_coo.row]
+  new_cols = [user_user_coo.col]
 
   for pair in tqdm.tqdm(identical_pairs):
-    # STEP ONE: First merge papers being cited by the pair.
-    # Add edges from second paper, to all papers cited by first paper.
-    cited_by_first = paper_paper_csr.getrow(pair[0]).nonzero()[1]
+    # STEP ONE: First merge users being cited by the pair.
+    # Add edges from second user, to all users cited by first user.
+    cited_by_first = user_user_csr.getrow(pair[0]).nonzero()[1]
     if cited_by_first.shape[0] > 0:
       new_rows.append(pair[1] * np.ones_like(cited_by_first))
       new_cols.append(cited_by_first)
 
-    # Add edges from first paper, to all papers cited by second paper.
-    cited_by_second = paper_paper_csr.getrow(pair[1]).nonzero()[1]
+    # Add edges from first user, to all users cited by second user.
+    cited_by_second = user_user_csr.getrow(pair[1]).nonzero()[1]
     if cited_by_second.shape[0] > 0:
       new_rows.append(pair[0] * np.ones_like(cited_by_second))
       new_cols.append(cited_by_second)
 
-    # STEP TWO: Then merge papers that cite the pair.
-    # Add edges to second paper, from all papers citing the first paper.
-    citing_first = paper_paper_csc.getcol(pair[0]).nonzero()[0]
+    # STEP TWO: Then merge users that cite the pair.
+    # Add edges to second user, from all users citing the first user.
+    citing_first = user_user_csc.getcol(pair[0]).nonzero()[0]
     if citing_first.shape[0] > 0:
       new_rows.append(citing_first)
       new_cols.append(pair[1] * np.ones_like(citing_first))
 
-    # Add edges to first paper, from all papers citing the second paper.
-    citing_second = paper_paper_csc.getcol(pair[1]).nonzero()[0]
+    # Add edges to first user, from all users citing the second user.
+    citing_second = user_user_csc.getcol(pair[1]).nonzero()[0]
     if citing_second.shape[0] > 0:
       new_rows.append(citing_second)
       new_cols.append(pair[0] * np.ones_like(citing_second))
 
   logging.info("Done with adjacency loop")
-  paper_paper_coo_shape = paper_paper_coo.shape
-  del paper_paper_csr
-  del paper_paper_csc
-  del paper_paper_coo
+  user_user_coo_shape = user_user_coo.shape
+  del user_user_csr
+  del user_user_csc
+  del user_user_coo
   # All done; now concatenate everything together and form new matrix.
   new_rows = np.concatenate(new_rows)
   new_cols = np.concatenate(new_cols)
   return sp.coo_matrix(
       (np.ones_like(new_rows, dtype=bool), (new_rows, new_cols)),
-      shape=paper_paper_coo_shape).tocsr()
+      shape=user_user_coo_shape).tocsr()
 
 # данные -> train, valid k раз
 def generate_k_fold_splits(
@@ -463,12 +463,13 @@ def _fix_adjacency_shapes(
     ) -> Dict[str, sp.csr.csr_matrix]:
   """Fixes the shapes of the adjacency matrices."""
   arrays = arrays.copy()
-  for key in ["author_institution_index",
-              # "author_paper_index",
-              # "paper_paper_index",
-              "institution_author_index",
-              # "paper_author_index",
-              # "paper_paper_index_t"
+  for key in [
+              # "group_institution_index",
+              "group_user_index",
+              "user_user_index",
+              # "institution_group_index",
+              "user_group_index",
+              "user_user_index_t"
               ]:
     print('key', key)
     type_sender = key.split("_")[0]
@@ -477,6 +478,6 @@ def _fix_adjacency_shapes(
     type_receiver = key.split("_")[1]
     print('type_receiver', type_receiver)
     print('SIZES[type_receiver]', SIZES[type_receiver])
-    # arrays[key] = _pad_to_shape(
-    #     arrays[key], output_shape=(SIZES[type_sender], SIZES[type_receiver]))
+    arrays[key] = _pad_to_shape(
+        arrays[key], output_shape=(SIZES[type_sender], SIZES[type_receiver]))
   return arrays
