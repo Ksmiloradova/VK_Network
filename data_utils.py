@@ -17,29 +17,29 @@ import sub_sampler
 
 Path = pathlib.Path
 
-NUM_PAPERS = 121_751_666
-NUM_AUTHORS = 122_383_112
-NUM_INSTITUTIONS = 25_721
+# NUM_PAPERS = 18_630_018
+NUM_AUTHORS = 18_630_018
+NUM_INSTITUTIONS = 537_442_563
 EMBEDDING_SIZE = 768 #(!)
 NUM_CLASSES = 153
 
-NUM_NODES = NUM_PAPERS + NUM_AUTHORS + NUM_INSTITUTIONS
+NUM_NODES = NUM_AUTHORS + NUM_INSTITUTIONS
 NUM_EDGES = 1_728_364_232
-assert NUM_NODES == 244_160_499
+assert NUM_NODES == 556_072_581
 
 # (?)
 NUM_K_FOLD_SPLITS = 10
 
 
 OFFSETS = {
-    "paper": 0,
-    "author": NUM_PAPERS,
-    "institution": NUM_PAPERS + NUM_AUTHORS,
+    # "paper": 0,
+    "author": 0,
+    "institution": NUM_AUTHORS,
 }
 
 
 SIZES = {
-    "paper": NUM_PAPERS,
+    # "paper": NUM_PAPERS,
     "author": NUM_AUTHORS,
     "institution": NUM_INSTITUTIONS
 }
@@ -58,8 +58,8 @@ TEST_INDEX_FILENAME = RAW_DIR / "train_idx.npy"
 
 EDGES_PAPER_PAPER_B = PREPROCESSED_DIR / "paper_paper_b.npz"
 EDGES_PAPER_PAPER_B_T = PREPROCESSED_DIR / "paper_paper_b_t.npz"
-EDGES_AUTHOR_INSTITUTION = PREPROCESSED_DIR / "author_institution.npz"
-EDGES_INSTITUTION_AUTHOR = PREPROCESSED_DIR / "institution_author.npz"
+EDGES_AUTHOR_INSTITUTION = PREPROCESSED_DIR / "group_user.npz"
+EDGES_INSTITUTION_AUTHOR = PREPROCESSED_DIR / "user_group.npz"
 EDGES_AUTHOR_PAPER = PREPROCESSED_DIR / "author_paper.npz"
 EDGES_PAPER_AUTHOR = PREPROCESSED_DIR / "paper_author.npz"
 
@@ -103,7 +103,9 @@ def load_csr(path, debug=False):
   if debug:
     # Dummy matrix for debugging.
     return sp.csr_matrix(np.zeros([10, 10]))
-  return sp.load_npz(str(path))
+  ret = sp.load_npz(str(path))
+  print('load_csr ret shape', ret.shape)
+  return ret
 
 
 @_log_path_decorator
@@ -139,10 +141,10 @@ def get_arrays(data_root="/data/",
   array_dict["valid_indices"] = valid_indices
   array_dict["test_indices"] = load_npy(data_root / TEST_INDEX_FILENAME) #"train_idx.npy"
 
-  if use_fused_node_labels:
-    array_dict["paper_label"] = load_npy(data_root / FUSED_NODE_LABELS_FILENAME) #"fused_node_labels.npy"
-  else:
-    array_dict["paper_label"] = load_npy(data_root / RAW_NODE_LABELS_FILENAME) #"node_label.npy"
+  # if use_fused_node_labels:
+  #   array_dict["paper_label"] = load_npy(data_root / FUSED_NODE_LABELS_FILENAME) #"fused_node_labels.npy"
+  # else:
+  #   array_dict["paper_label"] = load_npy(data_root / RAW_NODE_LABELS_FILENAME) #"node_label.npy"
 
   if return_adjacencies:
     logging.info("Starting to get adjacencies.")
@@ -151,11 +153,6 @@ def get_arrays(data_root="/data/",
           data_root / FUSED_PAPER_EDGES_FILENAME, debug=use_dummy_adjacencies)
       paper_paper_index_t = load_csr(
           data_root / FUSED_PAPER_EDGES_T_FILENAME, debug=use_dummy_adjacencies)
-    else:
-      paper_paper_index = load_csr(
-          data_root / EDGES_PAPER_PAPER_B, debug=use_dummy_adjacencies)
-      paper_paper_index_t = load_csr(
-          data_root / EDGES_PAPER_PAPER_B_T, debug=use_dummy_adjacencies)
     array_dict.update(
         dict(
             # Всевозможные связи между автором и институтами,статьями
@@ -164,34 +161,30 @@ def get_arrays(data_root="/data/",
                 debug=use_dummy_adjacencies),
             institution_author_index=load_csr(
                 data_root / EDGES_INSTITUTION_AUTHOR, #"institution_author.npz"
-                debug=use_dummy_adjacencies),
-            author_paper_index=load_csr(
-                data_root / EDGES_AUTHOR_PAPER, debug=use_dummy_adjacencies), #"author_paper.npz"
-            paper_author_index=load_csr(
-                data_root / EDGES_PAPER_AUTHOR, debug=use_dummy_adjacencies), #"paper_author.npz"
-            paper_paper_index=paper_paper_index,
-            paper_paper_index_t=paper_paper_index_t,
+                debug=use_dummy_adjacencies)
         ))
 
   if return_pca_embeddings:
     array_dict["bert_pca_129"] = np.load(
         data_root / PCA_MERGED_FEATURES_FILENAME, mmap_mode="r")
+    print(array_dict["bert_pca_129"].shape)
     assert array_dict["bert_pca_129"].shape == (NUM_NODES, 129)
 
   logging.info("Finish getting files")
 
-  # pytype: disable=attribute-error
-  assert array_dict["paper_year"].shape[0] == NUM_PAPERS
-  assert array_dict["paper_label"].shape[0] == NUM_PAPERS
+  # # pytype: disable=attribute-error
+  # assert array_dict["paper_year"].shape[0] == NUM_PAPERS
+  # assert array_dict["paper_label"].shape[0] == NUM_PAPERS
 
   if return_adjacencies and not use_dummy_adjacencies:
     array_dict = _fix_adjacency_shapes(array_dict)
 
     # Тесты на сохранение количества каждой сущности
-    assert array_dict["paper_author_index"].shape == (NUM_PAPERS, NUM_AUTHORS)
-    assert array_dict["author_paper_index"].shape == (NUM_AUTHORS, NUM_PAPERS)
-    assert array_dict["paper_paper_index"].shape == (NUM_PAPERS, NUM_PAPERS)
-    assert array_dict["paper_paper_index_t"].shape == (NUM_PAPERS, NUM_PAPERS)
+    # assert array_dict["paper_author_index"].shape == (NUM_PAPERS, NUM_AUTHORS)
+    # assert array_dict["author_paper_index"].shape == (NUM_AUTHORS, NUM_PAPERS)
+    # assert array_dict["paper_paper_index"].shape == (NUM_PAPERS, NUM_PAPERS)
+    # assert array_dict["paper_paper_index_t"].shape == (NUM_PAPERS, NUM_PAPERS)
+    print('array_dict["institution_author_index"].shape',array_dict["institution_author_index"].shape)
     assert array_dict["institution_author_index"].shape == (
         NUM_INSTITUTIONS, NUM_AUTHORS)
     assert array_dict["author_institution_index"].shape == (
@@ -225,8 +218,8 @@ def add_nodes_embedding_from_array(graph, array):
   nodes = graph.nodes.copy()
   indices = nodes["index"]
   embedding_indices = indices.copy()
-  embedding_indices[nodes["type"] == 1] += NUM_PAPERS
-  embedding_indices[nodes["type"] == 2] += NUM_PAPERS + NUM_AUTHORS
+  # embedding_indices[nodes["type"] == 1] += NUM_PAPERS
+  # embedding_indices[nodes["type"] == 2] += NUM_PAPERS + NUM_AUTHORS
 
   # Gather the embeddings for the indices.
   nodes["features"] = array[embedding_indices]
@@ -282,7 +275,7 @@ def get_graph_subsampling_dataset(
 def paper_features_to_author_features(
     author_paper_index, paper_features):
   """Averages paper features to authors."""
-  assert paper_features.shape[0] == NUM_PAPERS
+  # assert paper_features.shape[0] == NUM_PAPERS
   assert author_paper_index.shape[0] == NUM_AUTHORS
   author_features = np.zeros(
       [NUM_AUTHORS, paper_features.shape[1]], dtype=paper_features.dtype)
@@ -439,6 +432,8 @@ def _pad_to_shape(
   """Pads a csr sparse matrix to the given shape."""
 
   # We should not try to expand anything smaller.
+  print('output_shape', output_shape)
+  print('sparse_csr_matrix.shape', sparse_csr_matrix.shape)
   assert np.all(sparse_csr_matrix.shape <= output_shape)
 
   # Maybe it already has the right shape.
@@ -469,13 +464,19 @@ def _fix_adjacency_shapes(
   """Fixes the shapes of the adjacency matrices."""
   arrays = arrays.copy()
   for key in ["author_institution_index",
-              "author_paper_index",
-              "paper_paper_index",
+              # "author_paper_index",
+              # "paper_paper_index",
               "institution_author_index",
-              "paper_author_index",
-              "paper_paper_index_t"]:
+              # "paper_author_index",
+              # "paper_paper_index_t"
+              ]:
+    print('key', key)
     type_sender = key.split("_")[0]
+    print('type_sender', type_sender)
+    print('SIZES[type_sender]', SIZES[type_sender])
     type_receiver = key.split("_")[1]
-    arrays[key] = _pad_to_shape(
-        arrays[key], output_shape=(SIZES[type_sender], SIZES[type_receiver]))
+    print('type_receiver', type_receiver)
+    print('SIZES[type_receiver]', SIZES[type_receiver])
+    # arrays[key] = _pad_to_shape(
+    #     arrays[key], output_shape=(SIZES[type_sender], SIZES[type_receiver]))
   return arrays
