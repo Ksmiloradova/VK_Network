@@ -1,8 +1,13 @@
-/ROOT
+/ROOT/data/groups
+/ROOT/data/processed
+/ROOT/data/preprocessed
+/ROOT/data/raw
+/ROOT/data/vk_processed
 /models
 /data
 .vscode
 .history
 /__pycache__
-.npy
-.npz
+*.npy
+*.npz
+*.log
